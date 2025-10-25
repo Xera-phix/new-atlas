@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Backend FastAPI service
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - MONGODB_URI=${MONGODB_URI}
+      - GEOCLIP_ENDPOINT=http://geoclip:8001
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - geoclip
+
+  # Frontend React service
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+
+  # Geo-CLIP inference service
+  geoclip:
+    build: ./GeoCLIP
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./GeoCLIP:/app
+    # Uncomment if you have GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+# Optional: MongoDB local instance (if not using Atlas)
+# Uncomment if you want to run MongoDB locally
+#   mongodb:
+#     image: mongo:7
+#     ports:
+#       - "27017:27017"
+#     environment:
+#       - MONGO_INITDB_ROOT_USERNAME=admin
+#       - MONGO_INITDB_ROOT_PASSWORD=password
+#     volumes:
+#       - mongodb_data:/data/db
+
+# volumes:
+#   mongodb_data:
